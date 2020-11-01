@@ -1,0 +1,33 @@
+<div>
+  <!-- Banner -->
+  <header class="banner">
+    <div class="banner-content">
+      <h1 class="title-color">Gutenburg Project</h1>
+      <p>
+        A social cataloging website that allows you to freely search its
+        database of books, annotation and reviews
+      </p>
+    </div>
+  </header>
+  <!-- Banner End -->
+
+  <!-- Generes -->
+  <div class="container">
+  <div class="row">
+    <div class="col-md-6 col-12" *ngFor="let item of catogories">
+      <a [routerLink]="['/books',item.text]" class="genre m-3 p-3">
+        <span>
+          <img
+            class="genre-img"
+            src="{{item.img}}"
+            alt="Fiction"
+          />
+          <h3 class="genere-font ml-1">{{item.text}}</h3>
+        </span>
+        <img class="genre-img" src="../../assets/images/Next.svg" alt="Next" />
+      </a>
+    </div>
+  </div>
+</div>
+  <!-- Generes End -->
+</div>
