@@ -94,10 +94,7 @@ input:focus::-webkit-input-placeholder{
     }
 
     .book-wrapper{
-        padding: 2px;
-        padding-left: 10%;
-        padding-right: 20%;
-        
+       padding: 4%; 
     }
 
     .rectangle{
