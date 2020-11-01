@@ -19,6 +19,7 @@ export class BookListComponent implements OnInit {
   gener: string;
   showLoader = false;
   navUrls = { prev: null, next: null };
+  msg = "No Data Available";
   private searchTerms = new Subject<string>();
 
   constructor(
@@ -43,6 +44,9 @@ export class BookListComponent implements OnInit {
       )
       .subscribe((response: any) => {
         this.books = response.results;
+        if(this.books.length == 0)
+            this.msg = "No Data Available";
+            
         this.showLoader = false;
       });
   }
@@ -51,6 +55,7 @@ export class BookListComponent implements OnInit {
   getBooks() {
     this.showLoader = true;
     this.gener = this.router.snapshot.params["genere"];
+    this.msg = "Loading..."
     this.bookService.getBooks(this.gener).subscribe((data: any) => {
       this.books = data.results;
       this.showLoader = false;
@@ -88,10 +93,11 @@ export class BookListComponent implements OnInit {
   search(event: any): void {
     if (event.target.value) {
        if(event.target.value.length > 2) this.showLoader = true;
-
+        this.books = [];
        this.searchTerms.next(event.target.value);
 
     } else {
+      this.books = [];
       this.getBooks();
      } //get all the books if search text is empty;
   }
