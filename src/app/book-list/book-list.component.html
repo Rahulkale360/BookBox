@@ -23,9 +23,9 @@
       </div>
        </div>
     </ng-container>
-    <ng-container *ngIf="books.length == 0">
-      <p style="text-align: center;">No Data Available</p>
-      </ng-container>
+    <div *ngIf="books.length == 0">
+      <p class="no-data">No Data Available</p>
+      </div>
       <app-loader [showLoadingIcon]="showLoader"></app-loader>
   </div>
 </div>

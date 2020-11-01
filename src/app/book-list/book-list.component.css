@@ -79,9 +79,18 @@ input:focus::-webkit-input-placeholder{
     transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
 }
 
+.no-data{
+    margin-left: 300px;
+}
+
 @media screen and (max-width: 600px){
     .wrapper{
         padding-left: 0px;
         padding-right: 0px;
     }
+
+    .no-data{
+        margin-left: 200px;
+    }
+
 }
