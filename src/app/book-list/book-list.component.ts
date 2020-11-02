@@ -8,20 +8,22 @@ import {
   filter,
   switchMap,
 } from "rxjs/operators";
+import { ErrorMessages, Labels } from '../Helpers/constants';
 @Component({
   selector: "app-book-list",
   templateUrl: "./book-list.component.html",
   styleUrls: ["./book-list.component.css"],
 })
 export class BookListComponent implements OnInit {
-  title = "BookBox";
+  private searchTerms = new Subject<string>();
+  labels: Labels;
+  
   books: any = [];
   gener: string;
   showLoader = false;
   navUrls = { prev: null, next: null };
   msg = "No Data Available";
-  private searchTerms = new Subject<string>();
-
+  searchText: string;
   constructor(
     private bookService: BookService,
     private router: ActivatedRoute,
@@ -48,6 +50,8 @@ export class BookListComponent implements OnInit {
             this.msg = "No Data Available";
             
         this.showLoader = false;
+      }, error =>{
+        console.log(ErrorMessages.SOME_ERROR_OCCURED)
       });
   }
 
@@ -62,6 +66,8 @@ export class BookListComponent implements OnInit {
       this.navUrls.prev = data.previous;
       this.navUrls.next = data.next;
       console.log(this.books);
+    }, error =>{
+      console.log(ErrorMessages.SOME_ERROR_OCCURED)
     });
   }
 
@@ -73,6 +79,7 @@ export class BookListComponent implements OnInit {
     for (let key in book) {
       let file = book[key];
       let fileExtension = file.split(".").pop(); // getting file extension.
+
       // display if viewbale version found
       if (fileExtension == "htm") {
         window.open(file, "_blank", "top=0,left=0,height=100%,width=auto");
@@ -86,15 +93,15 @@ export class BookListComponent implements OnInit {
       }
     }
 
-    alert("No viewable version available.");
+    alert(ErrorMessages.NO_VIEWABLE_VERSION);
   }
 
   //get books on search.
-  search(event: any): void {
-    if (event.target.value) {
-       if(event.target.value.length > 2) this.showLoader = true;
+  search(): void {
+    if (this.searchText) {
+       if(this.searchText.length > 2) this.showLoader = true;
         this.books = [];
-       this.searchTerms.next(event.target.value);
+       this.searchTerms.next(this.searchText);
 
     } else {
       this.books = [];
@@ -109,14 +116,21 @@ export class BookListComponent implements OnInit {
   //load more books on scroll
   onScroll() {
     if (this.navUrls.next) {
+
+      //consider search param if the search text is available on text box while scrolling.
+      let paginateUrl = this.searchText ? this.navUrls.next + "&search="+ this.searchText 
+      : this.navUrls.next;
+      
       this.showLoader = true;
       this.bookService
-        .loadMoreBooks(this.navUrls.next)
+        .loadMoreBooks(paginateUrl)
         .subscribe((data: any) => {
           this.showLoader = false;
           this.books = [...this.books, ...data.results];
           this.navUrls.prev = data.previous;
           this.navUrls.next = data.next;
+        }, error =>{
+          console.log(ErrorMessages.SOME_ERROR_OCCURED)
         });
     }
   }

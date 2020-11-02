@@ -12,13 +12,14 @@ import { LoaderComponent } from './controls/loader/loader.component';
 import { FormsModule } from '@angular/forms';
 import { InfiniteScrollModule } from 'ngx-infinite-scroll';
 
+
 @NgModule({
-  declarations: [		
+  declarations: [			
     AppComponent,
     CatagoriesComponent,
     BookListComponent,
     TruncatePipe,
-    LoaderComponent,
+    LoaderComponent
    ],
   imports: [
     BrowserModule,
