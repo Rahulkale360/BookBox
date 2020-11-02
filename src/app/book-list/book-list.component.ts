@@ -1,6 +1,6 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
-import { Subject } from "rxjs";
+import { Subject, Subscription } from "rxjs";
 import { BookService } from "../services/book.service";
 import {
   debounceTime,
@@ -8,22 +8,27 @@ import {
   filter,
   switchMap,
 } from "rxjs/operators";
-import { ErrorMessages, Labels } from '../Helpers/constants';
+import { ErrorMessages, Labels } from "../Helpers/constants";
 @Component({
   selector: "app-book-list",
   templateUrl: "./book-list.component.html",
   styleUrls: ["./book-list.component.css"],
 })
-export class BookListComponent implements OnInit {
+export class BookListComponent implements OnInit, OnDestroy {
+  // observables
   private searchTerms = new Subject<string>();
+  onError = new Subject<any>();
+  subscription = new Subscription();
+
+  //fields
   labels: Labels;
-  
   books: any = [];
   gener: string;
   showLoader = false;
   navUrls = { prev: null, next: null };
   msg = "No Data Available";
   searchText: string;
+
   constructor(
     private bookService: BookService,
     private router: ActivatedRoute,
@@ -32,43 +37,26 @@ export class BookListComponent implements OnInit {
 
   ngOnInit(): void {
     this.getBooks();
-
-    // observable to handle to search term.
-    this.searchTerms
-      .pipe(
-        filter((text) => text.length >= 2),
-        debounceTime(500), // wait 500ms after each keystroke before considering the term
-        distinctUntilChanged(), // ignore new term if same as previous term
-        // switch to new search observable each time the term changes
-        switchMap((inputValue: string) => {
-          return this.bookService.searchBooks(inputValue, this.gener);
-        })
-      )
-      .subscribe((response: any) => {
-        this.books = response.results;
-        if(this.books.length == 0)
-            this.msg = "No Data Available";
-            
-        this.showLoader = false;
-      }, error =>{
-        console.log(ErrorMessages.SOME_ERROR_OCCURED)
-      });
+    this.handleSearch();
+    this.handleError();
   }
 
   //gets books from API
   getBooks() {
     this.showLoader = true;
     this.gener = this.router.snapshot.params["genere"];
-    this.msg = "Loading..."
-    this.bookService.getBooks(this.gener).subscribe((data: any) => {
-      this.books = data.results;
-      this.showLoader = false;
-      this.navUrls.prev = data.previous;
-      this.navUrls.next = data.next;
-      console.log(this.books);
-    }, error =>{
-      console.log(ErrorMessages.SOME_ERROR_OCCURED)
-    });
+    this.msg = "Loading...";
+    this.bookService.getBooks(this.gener).subscribe(
+      (data: any) => {
+        this.books = data.results;
+        this.showLoader = false;
+        this.navUrls.prev = data.previous;
+        this.navUrls.next = data.next;
+      },
+      (error) => {
+        this.onError.next(error);
+      }
+    );
   }
 
   getImage(book: any) {
@@ -99,39 +87,78 @@ export class BookListComponent implements OnInit {
   //get books on search.
   search(): void {
     if (this.searchText) {
-       if(this.searchText.length > 2) this.showLoader = true;
+      if (this.searchText.length > 2) {
+        this.showLoader = true;
         this.books = [];
-       this.searchTerms.next(this.searchText);
-
+        this.searchTerms.next(this.searchText);
+      }
     } else {
       this.books = [];
-      this.getBooks();
-     } //get all the books if search text is empty;
+      this.getBooks(); //get all the books if search text is empty;
+    }
   }
 
   navigate() {
     this.route.navigate(["home"]);
   }
 
+  // handles error for api calls
+  handleError() {
+    this.subscription = this.onError.subscribe((error) => {
+      this.showLoader = false;
+      alert(ErrorMessages.SOME_ERROR_OCCURED);
+    });
+  }
+
+  // observable to handle to search term.
+  handleSearch() {
+    this.searchTerms
+      .pipe(
+        filter((text) => text.length >= 2),
+        debounceTime(500), // wait 500ms after each keystroke before considering the term
+        distinctUntilChanged(), // ignore new term if same as previous term
+        // switch to new search observable each time the term changes
+        switchMap((inputValue: string) => {
+          return this.bookService.searchBooks(inputValue, this.gener);
+        })
+      )
+      .subscribe(
+        (response: any) => {
+          this.books = response.results;
+          if (this.books.length == 0) this.msg = "No Data Available";
+          this.showLoader = false;
+        },
+        (error) => {
+          this.onError.next();
+        }
+      );
+  }
+
   //load more books on scroll
   onScroll() {
     if (this.navUrls.next) {
-
       //consider search param if the search text is available on text box while scrolling.
-      let paginateUrl = this.searchText ? this.navUrls.next + "&search="+ this.searchText 
-      : this.navUrls.next;
-      
+      let paginateUrl = this.searchText
+        ? this.navUrls.next + "&search=" + this.searchText
+        : this.navUrls.next;
+
       this.showLoader = true;
-      this.bookService
-        .loadMoreBooks(paginateUrl)
-        .subscribe((data: any) => {
+      this.bookService.loadMoreBooks(paginateUrl).subscribe(
+        (data: any) => {
           this.showLoader = false;
           this.books = [...this.books, ...data.results];
           this.navUrls.prev = data.previous;
           this.navUrls.next = data.next;
-        }, error =>{
-          console.log(ErrorMessages.SOME_ERROR_OCCURED)
-        });
+        },
+        (error) => {
+          this.onError.next();
+        }
+      );
     }
+  }
+
+  // unsubscribing from error observerble in order avoid memory leaks.
+  ngOnDestroy() {
+    this.subscription.unsubscribe();
   }
 }
